@@ -11,7 +11,7 @@ var jQueryShim = require('./jQueryShim');
 /* jquery.signalR.core.js */
 /*global window:false */
 /*!
- * ASP.NET SignalR JavaScript Library v2.2.1
+ * ASP.NET SignalR JavaScript Library v2.2.1-pre
  * http://signalr.net/
  *
  * Copyright (c) .NET Foundation. All rights reserved.
@@ -745,13 +745,13 @@ var jQueryShim = require('./jQueryShim');
 
                     if ($.isArray(config.transport)) {
                         $.each(config.transport, function (_, transport) {
-                            if ($.inArray(transport, supportedTransports) >= 0) {
+                            if ($.inArray(supportedTransports, transport)) {
                                 transports.push(transport);
                             }
                         });
                     } else if (config.transport === "auto") {
                         transports = supportedTransports;
-                    } else if ($.inArray(config.transport, supportedTransports) >= 0) {
+                    } else if ($.inArray(supportedTransports, config.transport)) {
                         transports.push(config.transport);
                     }
 
@@ -955,6 +955,9 @@ var jQueryShim = require('./jQueryShim');
 
             // Clear out our message buffer
             connection._.connectingMessageBuffer.clear();
+
+            // Clean up this event
+            $(connection).unbind(events.onStart);
 
             // Trigger the disconnect event
             changeState(connection, connection.state, _signalR.connectionState.disconnected);
@@ -2150,8 +2153,8 @@ var jQueryShim = require('./jQueryShim');
                 }
 
                 // Ensure the iframe is where we left it
-                if (connection.frame.parentNode === window.document.body) {
-                    window.document.body.removeChild(connection.frame);
+                if (connection.frame.parentNode === window.document.documentElement) {
+                    window.document.documentElement.removeChild(connection.frame);
                 }
 
                 delete transportLogic.foreverFrame.connections[connection.frameId];
@@ -2867,8 +2870,9 @@ var jQueryShim = require('./jQueryShim');
 /*global window:false */
 /// <reference path="jquery.signalR.core.js" />
 (function ($, undefined) {
-    $.signalR.version = "2.2.1";
+    $.signalR.version = "2.2.1-pre";
 })(jQueryShim);
 
 var hubConnection = exports.hubConnection = jQueryShim.hubConnection;
 var signalR = exports.signalR = jQueryShim.signalR;
+exports.default = jQueryShim;

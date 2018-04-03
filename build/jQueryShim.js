@@ -4,36 +4,45 @@ var jQueryDeferred = require('jquery-deferred');
 var jQueryParam = require('jquery-param');
 
 var jqueryFunction = function jqueryFunction(subject) {
-  var events = subject.events || {};
-
-  if (subject && subject === subject.window) return {
-    0: subject,
-    load: function load(handler) {
-      return subject.addEventListener('load', handler, false);
-    },
-    bind: function bind(event, handler) {
-      return subject.addEventListener(event, handler, false);
-    },
-    unbind: function unbind(event, handler) {
-      return subject.removeEventListener(event, handler, false);
-    }
+  var getEvents = function getEvents() {
+    return subject.events || {};
   };
+
+  if (subject && subject === subject.window) {
+    return {
+      0: subject,
+      load: function load(handler) {
+        return subject.addEventListener("load", handler, false);
+      },
+      bind: function bind(event, handler) {
+        return subject.addEventListener(event, handler, false);
+      },
+      unbind: function unbind(event, handler) {
+        return subject.removeEventListener(event, handler, false);
+      }
+    };
+  }
 
   return {
     0: subject,
-
     unbind: function unbind(event, handler) {
+      var events = getEvents();
       var handlers = events[event] || [];
 
       if (handler) {
         var idx = handlers.indexOf(handler);
-        if (idx !== -1) handlers.splice(idx, 1);
-      } else handlers = [];
+        if (idx !== -1) {
+          handlers.splice(idx, 1);
+        }
+      } else {
+        handlers = [];
+      }
 
       events[event] = handlers;
       subject.events = events;
     },
     bind: function bind(event, handler) {
+      var events = getEvents();
       var current = events[event] || [];
       events[event] = current.concat(handler);
       subject.events = events;
@@ -41,8 +50,15 @@ var jqueryFunction = function jqueryFunction(subject) {
     triggerHandler: function triggerHandler(event, args) {
       var _this = this;
 
+      var events = getEvents();
       var handlers = events[event] || [];
       handlers.forEach(function (fn) {
+        if (args === undefined) {
+          args = { type: event };
+        }
+        if (!Array.isArray(args)) {
+          args = [args];
+        }
         if (args && args[0] && args[0].type === undefined) {
           args = [{
             type: event
@@ -71,12 +87,17 @@ var ajax = function ajax(options) {
     }
 
     if (request.status === 200 && !request._hasError) {
-      options.success && options.success(JSON.parse(request.responseText));
+      try {
+        options.success && options.success(JSON.parse(request.responseText));
+      } catch (e) {
+        options.error && options.error(request);
+      }
     } else {
       options.error && options.error(request);
     }
   };
 
+  request.withCredentials = options.xhrFields.withCredentials;
   request.open(options.type, options.url);
   request.setRequestHeader('content-type', options.contentType);
 
@@ -104,9 +125,7 @@ module.exports = jQueryDeferred.extend(jqueryFunction, jQueryDeferred, {
   makeArray: function makeArray(arr) {
     return [].slice.call(arr, 0);
   },
-  param: function param(obj) {
-    return jQueryParam(obj);
-  },
+  param: jQueryParam,
   support: {
     cors: function () {
       var xhrObj = xhr();
