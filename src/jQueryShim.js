@@ -71,32 +71,50 @@ const xhr = function() {
   } catch (e) {}
 };
 
+const qs = data => {
+  let results = [];
+  for (const name in data)
+    results.push(`${name}=${encodeURIComponent(data[name])}`);
+  return results.join('&');
+};
+
 const ajax = function(options) {
   const request = xhr();
+  let aborted = false;
+
   request.onreadystatechange = () => {
-    if (request.readyState !== 4) {
+    if (request.readyState !== 4 || aborted) {
       return;
     }
 
-    if (request.status === 200 && !request._hasError) {
+    if (request.status === 200 && !request._hasError && options.success) {
       try {
-        options.success && options.success(JSON.parse(request.responseText));
+        options.success(JSON.parse(request.responseText));
       } catch (e) {
-        options.error && options.error(request);
+        options.error(request, e);
       }
-    } else {
-      options.error && options.error(request);
+    } else if (options.error) {
+      options.error(request, request._response);
     }
   };
 
-  request.withCredentials = options.xhrFields.withCredentials;
   request.open(options.type, options.url);
   request.setRequestHeader('content-type', options.contentType);
 
-  request.send(options.data.data && `data=${options.data.data}`);
+  if (options.xhrFields) {
+    Object.keys(options.xhrFields).forEach(key => {
+      const value = options.xhrFields[key];
+      request[key] = value;
+    });
+  }
+
+  request.send(
+    options.type === 'POST' ? options.data && qs(options.data) : undefined
+  );
 
   return {
     abort: function(reason) {
+      aborted = true;
       return request.abort(reason);
     }
   };
