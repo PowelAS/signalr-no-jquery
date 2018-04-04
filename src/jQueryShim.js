@@ -42,17 +42,28 @@ const jqueryFunction = function(subject) {
     triggerHandler(event, args) {
       const events = getEvents();
       const handlers = events[event] || [];
+      const target = this[0];
+
       handlers.forEach(fn => {
         if (args === undefined) {
-          args = { type: event };
+          args = {
+            type: event,
+            target: target
+          };
         }
         if (!Array.isArray(args)) {
           args = [args];
         }
-        if (args && args[0] && args[0].type === undefined) {
+        if (
+          args &&
+          args[0] &&
+          args[0].type === undefined &&
+          args[0].target === undefined
+        ) {
           args = [
             {
               type: event,
+              target: target
             },
           ].concat(args || []);
         } else {

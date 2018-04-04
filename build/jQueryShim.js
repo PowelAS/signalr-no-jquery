@@ -52,16 +52,22 @@ var jqueryFunction = function jqueryFunction(subject) {
 
       var events = getEvents();
       var handlers = events[event] || [];
+      var target = this[0];
+
       handlers.forEach(function (fn) {
         if (args === undefined) {
-          args = { type: event };
+          args = {
+            type: event,
+            target: target
+          };
         }
         if (!Array.isArray(args)) {
           args = [args];
         }
-        if (args && args[0] && args[0].type === undefined) {
+        if (args && args[0] && args[0].type === undefined && args[0].target === undefined) {
           args = [{
-            type: event
+            type: event,
+            target: target
           }].concat(args || []);
         } else {
           args = args || [];
